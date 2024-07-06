@@ -1,0 +1,32 @@
+#version 460
+
+layout(set = 0, binding = 0) buffer InputSamples
+{
+    float inputSamples[];
+};
+layout(push_constant, std430) uniform Window
+{
+    uint inputOffset;
+    uint sampleCount;
+};
+uint invocationID = gl_GlobalInvocationID.x;
+layout(local_size_x = 64) in;
+void main()
+{
+    if(invocationID > (sampleCount / 4) - 1)
+    {
+        return;
+    }
+    uint index = inputOffset + (invocationID * 4);
+    uint outputOffset = inputOffset + sampleCount;
+    float minSample = 0;
+    float maxSample = 0;
+    for(uint i = 0; i != 4; ++i)
+    {
+        minSample = min(minSample, inputSamples[index + i]);
+        maxSample = max(maxSample, inputSamples[index + i]);
+    }
+    inputSamples[outputOffset + (invocationID * 2)] = minSample;
+    inputSamples[outputOffset + (invocationID * 2) + 1] = maxSample;
+
+}

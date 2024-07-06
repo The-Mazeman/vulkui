@@ -1,0 +1,39 @@
+#version 460
+
+layout(set = 0, binding = 0) buffer InputSamples
+{
+    float inputSamples[];
+};
+layout(set = 0, binding = 1) buffer OutputSamples
+{
+    float outputSamples[];
+};
+
+layout(push_constant, std430) uniform Window
+{
+    uint width;
+    uint mipIndex;
+    float framesPerPixel;
+    float mipLevelOffset;
+    uint startOffset;
+    uint padding;
+};
+uint invocationID = gl_GlobalInvocationID.x;
+layout(local_size_x = 64) in;
+void main()
+{
+    if(invocationID > width - 1)
+    {
+        return;
+    }
+    float startIndex = float(invocationID + startOffset) * framesPerPixel;
+    uint index = uint(startIndex);
+    index *= 2;
+
+    float minSample = inputSamples[mipIndex + index];
+    float maxSample = inputSamples[mipIndex + index + 1] * mipLevelOffset;
+
+    uint outputIndex = invocationID * 2;
+    outputSamples[outputIndex] = minSample; 
+    outputSamples[outputIndex + 1] = maxSample; 
+}
